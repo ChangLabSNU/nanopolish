@@ -49,24 +49,24 @@ using namespace std::placeholders;
 #define SUBPROGRAM "polya"
 
 static const char *POLYA_VERSION_MESSAGE =
-SUBPROGRAM " Version " PACKAGE_VERSION "\n"
-"Written by Jared Simpson.\n"
-"\n"
-"Copyright 2017 Ontario Institute for Cancer Research\n";
+    SUBPROGRAM " Version " PACKAGE_VERSION "\n"
+               "Written by Jared Simpson.\n"
+               "\n"
+               "Copyright 2017 Ontario Institute for Cancer Research\n";
 
 static const char *POLYA_USAGE_MESSAGE =
-"Usage: " PACKAGE_NAME " " SUBPROGRAM " [OPTIONS] --reads reads.fa --bam alignments.bam --genome genome.fa\n"
-"Estimate the length of the poly-A tail on direct RNA reads\n"
-"\n"
-"  -v, --verbose                        display verbose output\n"
-"      --version                        display version\n"
-"      --help                           display this help and exit\n"
-"  -w, --window=STR                     only compute the poly-A lengths for reads in window STR (format: ctg:start_id-end_id)\n"
-"  -r, --reads=FILE                     the 1D ONT direct RNA reads are in fasta FILE\n"
-"  -b, --bam=FILE                       the reads aligned to the genome assembly are in bam FILE\n"
-"  -g, --genome=FILE                    the reference genome assembly for the reads is in FILE\n"
-"  -t, --threads=NUM                    use NUM threads (default: 1)\n"
-"\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
+    "Usage: " PACKAGE_NAME " " SUBPROGRAM " [OPTIONS] --reads reads.fa --bam alignments.bam --genome genome.fa\n"
+    "Estimate the length of the poly-A tail on direct RNA reads\n"
+    "\n"
+    "  -v, --verbose                        display verbose output\n"
+    "      --version                        display version\n"
+    "      --help                           display this help and exit\n"
+    "  -w, --window=STR                     only compute the poly-A lengths for reads in window STR (format: ctg:start_id-end_id)\n"
+    "  -r, --reads=FILE                     the 1D ONT direct RNA reads are in fasta FILE\n"
+    "  -b, --bam=FILE                       the reads aligned to the genome assembly are in bam FILE\n"
+    "  -g, --genome=FILE                    the reference genome assembly for the reads is in FILE\n"
+    "  -t, --threads=NUM                    use NUM threads (default: 1)\n"
+    "\nReport bugs to " PACKAGE_BUGREPORT "\n\n";
 
 namespace opt
 {
@@ -80,76 +80,102 @@ namespace opt
     static int batch_size = 128;
 }
 
-static const char* shortopts = "r:b:g:t:w:v";
+static const char *shortopts = "r:b:g:t:w:v";
 
-enum { OPT_HELP = 1, OPT_VERSION };
-
-static const struct option longopts[] = {
-    { "verbose",          no_argument,       NULL, 'v' },
-    { "reads",            required_argument, NULL, 'r' },
-    { "bam",              required_argument, NULL, 'b' },
-    { "genome",           required_argument, NULL, 'g' },
-    { "window",           required_argument, NULL, 'w' },
-    { "threads",          required_argument, NULL, 't' },
-    { "help",             no_argument,       NULL, OPT_HELP },
-    { "version",          no_argument,       NULL, OPT_VERSION },
-    { NULL, 0, NULL, 0 }
+enum
+{
+    OPT_HELP = 1,
+    OPT_VERSION
 };
 
-void parse_polya_options(int argc, char** argv)
+static const struct option longopts[] = {
+    {"verbose", no_argument, NULL, 'v'},
+    {"reads", required_argument, NULL, 'r'},
+    {"bam", required_argument, NULL, 'b'},
+    {"genome", required_argument, NULL, 'g'},
+    {"window", required_argument, NULL, 'w'},
+    {"threads", required_argument, NULL, 't'},
+    {"help", no_argument, NULL, OPT_HELP},
+    {"version", no_argument, NULL, OPT_VERSION},
+    {NULL, 0, NULL, 0}};
+
+void parse_polya_options(int argc, char **argv)
 {
     bool die = false;
-    for (char c; (c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1;) {
+    for (char c; (c = getopt_long(argc, argv, shortopts, longopts, NULL)) != -1;)
+    {
         std::istringstream arg(optarg != NULL ? optarg : "");
-        switch (c) {
-            case 'r': arg >> opt::reads_file; break;
-            case 'g': arg >> opt::genome_file; break;
-            case 'b': arg >> opt::bam_file; break;
-            case '?': die = true; break;
-            case 't': arg >> opt::num_threads; break;
-            case 'v': opt::verbose++; break;
-            case 'w': arg >> opt::region; break;
-            case OPT_HELP:
-                std::cout << POLYA_USAGE_MESSAGE;
-                exit(EXIT_SUCCESS);
-            case OPT_VERSION:
-                std::cout << POLYA_VERSION_MESSAGE;
-                exit(EXIT_SUCCESS);
+        switch (c)
+        {
+        case 'r':
+            arg >> opt::reads_file;
+            break;
+        case 'g':
+            arg >> opt::genome_file;
+            break;
+        case 'b':
+            arg >> opt::bam_file;
+            break;
+        case '?':
+            die = true;
+            break;
+        case 't':
+            arg >> opt::num_threads;
+            break;
+        case 'v':
+            opt::verbose++;
+            break;
+        case 'w':
+            arg >> opt::region;
+            break;
+        case OPT_HELP:
+            std::cout << POLYA_USAGE_MESSAGE;
+            exit(EXIT_SUCCESS);
+        case OPT_VERSION:
+            std::cout << POLYA_VERSION_MESSAGE;
+            exit(EXIT_SUCCESS);
         }
     }
 
-    if(argc - optind > 0) {
+    if (argc - optind > 0)
+    {
         opt::region = argv[optind++];
     }
 
-    if (argc - optind > 0) {
+    if (argc - optind > 0)
+    {
         std::cerr << SUBPROGRAM ": too many arguments\n";
         die = true;
     }
 
-    if(opt::num_threads <= 0) {
+    if (opt::num_threads <= 0)
+    {
         std::cerr << SUBPROGRAM ": invalid number of threads: " << opt::num_threads << "\n";
         die = true;
     }
 
-    if(opt::reads_file.empty()) {
+    if (opt::reads_file.empty())
+    {
         std::cerr << SUBPROGRAM ": a --reads file must be provided\n";
         die = true;
     }
 
-    if(opt::genome_file.empty()) {
+    if (opt::genome_file.empty())
+    {
         std::cerr << SUBPROGRAM ": a --genome file must be provided\n";
         die = true;
     }
 
-    if(opt::bam_file.empty()) {
+    if (opt::bam_file.empty())
+    {
         std::cerr << SUBPROGRAM ": a --bam file must be provided\n";
         die = true;
     }
 
     if (die)
     {
-        std::cout << "\n" << POLYA_USAGE_MESSAGE;
+        std::cout << "\n"
+                  << POLYA_USAGE_MESSAGE;
         exit(EXIT_FAILURE);
     }
 }
@@ -173,7 +199,8 @@ void parse_polya_options(int argc, char** argv)
 //   + log_probas
 // ================================================================================
 // Segmentation struct holds endpoints of distinct regions from a segmented squiggle:
-struct Segmentation {
+struct Segmentation
+{
     size_t start;   // final index of S; might not exist if skipped over
     size_t leader;  // final index of L, as indicated by 3'->5' viterbi
     size_t adapter; // final index of A, as indicated by 3'->5' viterbi
@@ -196,12 +223,14 @@ enum HMMState
 
 // struct ViterbiOutputs composed of viterbi probs
 // and a vector of integers from {0,1,2,3,4,5} == {S,L,A,P,C,T}.
-struct ViterbiOutputs {
+struct ViterbiOutputs
+{
     std::vector<float> scores;
     std::vector<HMMState> labels;
 };
 
-class SegmentationHMM {
+class SegmentationHMM
+{
 private:
     // ----- state space parameters:
     // N.B.: `state transitions` is used to compute log probabilities, as viterbi decoding is done in log-space.
@@ -218,10 +247,9 @@ private:
         // C -> P (99%), C -> C (01%)
         {0.00f, 0.00f, 0.00f, 0.99f, 0.01f, 0.00f},
         // T -> T (100%)
-        {0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 1.00f}
-    };
+        {0.00f, 0.00f, 0.00f, 0.00f, 0.00f, 1.00f}};
     // All state sequences must start on S:
-    float start_probs[HMM_NUM_STATES] = { 1.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f };
+    float start_probs[HMM_NUM_STATES] = {1.00f, 0.00f, 0.00f, 0.00f, 0.00f, 0.00f};
 
     // ----- emission parameters:
     // emission parameters, from empirical MLE on manually-flagged reads:
@@ -261,45 +289,57 @@ private:
         // sometimes samples can exceed reasonable bounds due to mechanical issues;
         // in that case, we should clamp it to 100:
         float xx;
-        if (x > 200.0f || x < 40.0f) {
+        if (x > 200.0f || x < 40.0f)
+        {
             xx = 100.0f;
-        } else {
+        }
+        else
+        {
             xx = x;
         }
 
         // compute on a case-by-case basis to handle heterogeneous probability distributions
         float log_probs;
-        if (state == HMM_START) {
+        if (state == HMM_START)
+        {
             // START state:
             float norm_term = s_norm_coeff * normal_pdf(xx, this->s_emission);
             log_probs = std::log(norm_term + s_unif_coeff * s_prob);
         }
-        if (state == HMM_LEADER) {
+        if (state == HMM_LEADER)
+        {
             // LEADER state:
             log_probs = log_normal_pdf(xx, this->l_emission);
         }
-        if (state == HMM_ADAPTER) {
+        if (state == HMM_ADAPTER)
+        {
             // ADAPTER state: compute log of gaussian mixture probability
-            float mixture_proba = (this->a0_coeff*normal_pdf(xx,this->a0_emission)) + \
-                (this->a1_coeff*normal_pdf(xx, this->a1_emission));
+            float mixture_proba = (this->a0_coeff * normal_pdf(xx, this->a0_emission)) +
+                                  (this->a1_coeff * normal_pdf(xx, this->a1_emission));
             log_probs = std::log(mixture_proba);
         }
-        if (state == HMM_POLYA) {
+        if (state == HMM_POLYA)
+        {
             // POLYA state:
             log_probs = log_normal_pdf(xx, this->p_emission);
         }
-        if (state == HMM_CLIFF) {
+        if (state == HMM_CLIFF)
+        {
             // CLIFF state: middle-out uniform distribution
-            if ((xx > this->c_begin) && (xx <  this->c_end)) {
+            if ((xx > this->c_begin) && (xx < this->c_end))
+            {
                 log_probs = this->c_log_prob;
-            } else {
+            }
+            else
+            {
                 log_probs = -INFINITY;
             }
         }
-        if (state == HMM_TRANSCRIPT) {
+        if (state == HMM_TRANSCRIPT)
+        {
             // TRANSCRIPT state: compute log of gaussian mixture probability
-            float mixture_proba = (this->t0_coeff*normal_pdf(xx, this->t0_emission)) + \
-                (this->t1_coeff*normal_pdf(xx, this->t1_emission));
+            float mixture_proba = (this->t0_coeff * normal_pdf(xx, this->t0_emission)) +
+                                  (this->t1_coeff * normal_pdf(xx, this->t1_emission));
             log_probs = std::log(mixture_proba);
         }
         return log_probs;
@@ -310,56 +350,65 @@ public:
     SegmentationHMM(float scale, float shift, float var)
     {
         // - - - initialize log-probabilities:
-        for (int i = 0; i < HMM_NUM_STATES; ++i) {
-            for (int j = 0; j < HMM_NUM_STATES; ++j) {
-                if (this->state_transitions[i][j] > 0.00f) {
+        for (int i = 0; i < HMM_NUM_STATES; ++i)
+        {
+            for (int j = 0; j < HMM_NUM_STATES; ++j)
+            {
+                if (this->state_transitions[i][j] > 0.00f)
+                {
                     this->log_state_transitions[i][j] = std::log(this->state_transitions[i][j]);
-                } else {
+                }
+                else
+                {
                     this->log_state_transitions[i][j] = -INFINITY;
                 }
             }
-            if (this->start_probs[i] > 0.00f) {
+            if (this->start_probs[i] > 0.00f)
+            {
                 this->log_start_probs[i] = std::log(this->start_probs[i]);
-            } else {
+            }
+            else
+            {
                 this->log_start_probs[i] = -INFINITY;
             }
         }
         // - - - update all gaussian parameters by scaling/shifting:
         // START emissions:
-        this->s_emission.mean = shift + scale*(this->s_emission.mean);
+        this->s_emission.mean = shift + scale * (this->s_emission.mean);
         this->s_emission.stdv = var * this->s_emission.stdv;
         this->s_emission.log_stdv = std::log(this->s_emission.stdv);
         // LEADER emissions:
-        this->l_emission.mean = shift + scale*(this->l_emission.mean);
+        this->l_emission.mean = shift + scale * (this->l_emission.mean);
         this->l_emission.stdv = var * this->l_emission.stdv;
         this->l_emission.log_stdv = std::log(this->l_emission.stdv);
         // ADAPTER emissions:
-        this->a0_emission.mean = shift + scale*(this->a0_emission.mean);
+        this->a0_emission.mean = shift + scale * (this->a0_emission.mean);
         this->a0_emission.stdv = var * this->a0_emission.stdv;
         this->a0_emission.log_stdv = std::log(this->a0_emission.stdv);
-        this->a1_emission.mean = shift + scale*(this->a1_emission.mean);
+        this->a1_emission.mean = shift + scale * (this->a1_emission.mean);
         this->a1_emission.stdv = var * this->a1_emission.stdv;
         this->a1_emission.log_stdv = std::log(this->a1_emission.stdv);
         // POLYA emissions:
-        this->p_emission.mean = shift + scale*(this->p_emission.mean);
+        this->p_emission.mean = shift + scale * (this->p_emission.mean);
         this->p_emission.stdv = var * this->p_emission.stdv;
         this->p_emission.log_stdv = std::log(this->p_emission.stdv);
         // TRANSCRIPT emissions:
-        this->t0_emission.mean = shift + scale*(this->t0_emission.mean);
+        this->t0_emission.mean = shift + scale * (this->t0_emission.mean);
         this->t0_emission.stdv = var * this->t0_emission.stdv;
         this->t0_emission.log_stdv = std::log(this->t0_emission.stdv);
-        this->t1_emission.mean = shift + scale*(this->t1_emission.mean);
+        this->t1_emission.mean = shift + scale * (this->t1_emission.mean);
         this->t1_emission.stdv = var * this->t1_emission.stdv;
         this->t1_emission.log_stdv = std::log(this->t1_emission.stdv);
     }
     // ----- destructor: nothing to clean up
-    ~SegmentationHMM() { }
+    ~SegmentationHMM() {}
 
     // ----- for a given sample value and shift/scale parameters, return log-probs for each state:
     std::vector<float> log_probas(const float x) const
     {
         std::vector<float> log_proba(HMM_NUM_STATES);
-        for (uint8_t k = 0; k < HMM_NUM_STATES; ++k) {
+        for (uint8_t k = 0; k < HMM_NUM_STATES; ++k)
+        {
             log_proba[k] = this->emit_log_proba(x, static_cast<HMMState>(k));
         }
         return log_proba;
@@ -369,35 +418,36 @@ public:
     // N.B.1: viterbi decoding happens in the 3'->5' direction.
     // N.B.2: this algorithm takes place in log-space for numerical stability;
     // the `scores` variable refers to log-prob scores.
-    ViterbiOutputs viterbi(const SquiggleRead& sr) const
+    ViterbiOutputs viterbi(const SquiggleRead &sr) const
     {
         // count of raw samples:
         size_t num_samples = sr.samples.size();
 
         // create/initialize viterbi scores and backpointers:
         std::vector<float> init_scores(HMM_NUM_STATES, -std::numeric_limits<float>::infinity()); // log(0.0) == -INFTY
-        std::vector<HMMState> init_bptrs(HMM_NUM_STATES, HMM_NUM_STATES); // HMM_NUM_STATES used as a dummy value here
-        std::vector< std::vector<float> > viterbi_scores(num_samples, init_scores);
-        std::vector< std::vector<HMMState> > viterbi_bptrs(num_samples, init_bptrs);
+        std::vector<HMMState> init_bptrs(HMM_NUM_STATES, HMM_NUM_STATES);                        // HMM_NUM_STATES used as a dummy value here
+        std::vector<std::vector<float>> viterbi_scores(num_samples, init_scores);
+        std::vector<std::vector<HMMState>> viterbi_bptrs(num_samples, init_bptrs);
 
         // forward viterbi pass; fill up backpointers:
         // weight initially distributed between START and LEADER:
-        viterbi_scores[0][HMM_START] = this->log_start_probs[HMM_START] + this->emit_log_proba(sr.samples[num_samples-1], HMM_START);
-        viterbi_scores[0][HMM_LEADER] = this->log_start_probs[HMM_LEADER] + this->emit_log_proba(sr.samples[num_samples-1], HMM_LEADER);
-        for (size_t i = 1; i < num_samples; ++i) {
+        viterbi_scores[0][HMM_START] = this->log_start_probs[HMM_START] + this->emit_log_proba(sr.samples[num_samples - 1], HMM_START);
+        viterbi_scores[0][HMM_LEADER] = this->log_start_probs[HMM_LEADER] + this->emit_log_proba(sr.samples[num_samples - 1], HMM_LEADER);
+        for (size_t i = 1; i < num_samples; ++i)
+        {
             // get individual incoming state scores:
-            float s_to_s = viterbi_scores.at(i-1)[HMM_START] + this->log_state_transitions[HMM_START][HMM_START];
-            float s_to_l = viterbi_scores.at(i-1)[HMM_START] + this->log_state_transitions[HMM_START][HMM_LEADER];
-            float l_to_l = viterbi_scores.at(i-1)[HMM_LEADER] + this->log_state_transitions[HMM_LEADER][HMM_LEADER];
-            float l_to_a = viterbi_scores.at(i-1)[HMM_LEADER] + this->log_state_transitions[HMM_LEADER][HMM_ADAPTER];
-            float a_to_a = viterbi_scores.at(i-1)[HMM_ADAPTER] + this->log_state_transitions[HMM_ADAPTER][HMM_ADAPTER];
-            float a_to_p = viterbi_scores.at(i-1)[HMM_ADAPTER] + this->log_state_transitions[HMM_ADAPTER][HMM_POLYA];
-            float p_to_p = viterbi_scores.at(i-1)[HMM_POLYA] + this->log_state_transitions[HMM_POLYA][HMM_POLYA];
-            float p_to_c = viterbi_scores.at(i-1)[HMM_POLYA] + this->log_state_transitions[HMM_POLYA][HMM_CLIFF];
-            float p_to_t = viterbi_scores.at(i-1)[HMM_POLYA] + this->log_state_transitions[HMM_POLYA][HMM_TRANSCRIPT];
-            float c_to_c = viterbi_scores.at(i-1)[HMM_CLIFF] + this->log_state_transitions[HMM_CLIFF][HMM_CLIFF];
-            float c_to_p = viterbi_scores.at(i-1)[HMM_CLIFF] + this->log_state_transitions[HMM_CLIFF][HMM_POLYA];
-            float t_to_t = viterbi_scores.at(i-1)[HMM_TRANSCRIPT] + this->log_state_transitions[HMM_TRANSCRIPT][HMM_TRANSCRIPT];
+            float s_to_s = viterbi_scores.at(i - 1)[HMM_START] + this->log_state_transitions[HMM_START][HMM_START];
+            float s_to_l = viterbi_scores.at(i - 1)[HMM_START] + this->log_state_transitions[HMM_START][HMM_LEADER];
+            float l_to_l = viterbi_scores.at(i - 1)[HMM_LEADER] + this->log_state_transitions[HMM_LEADER][HMM_LEADER];
+            float l_to_a = viterbi_scores.at(i - 1)[HMM_LEADER] + this->log_state_transitions[HMM_LEADER][HMM_ADAPTER];
+            float a_to_a = viterbi_scores.at(i - 1)[HMM_ADAPTER] + this->log_state_transitions[HMM_ADAPTER][HMM_ADAPTER];
+            float a_to_p = viterbi_scores.at(i - 1)[HMM_ADAPTER] + this->log_state_transitions[HMM_ADAPTER][HMM_POLYA];
+            float p_to_p = viterbi_scores.at(i - 1)[HMM_POLYA] + this->log_state_transitions[HMM_POLYA][HMM_POLYA];
+            float p_to_c = viterbi_scores.at(i - 1)[HMM_POLYA] + this->log_state_transitions[HMM_POLYA][HMM_CLIFF];
+            float p_to_t = viterbi_scores.at(i - 1)[HMM_POLYA] + this->log_state_transitions[HMM_POLYA][HMM_TRANSCRIPT];
+            float c_to_c = viterbi_scores.at(i - 1)[HMM_CLIFF] + this->log_state_transitions[HMM_CLIFF][HMM_CLIFF];
+            float c_to_p = viterbi_scores.at(i - 1)[HMM_CLIFF] + this->log_state_transitions[HMM_CLIFF][HMM_POLYA];
+            float t_to_t = viterbi_scores.at(i - 1)[HMM_TRANSCRIPT] + this->log_state_transitions[HMM_TRANSCRIPT][HMM_TRANSCRIPT];
 
             // update the viterbi scores for each state at this timestep:
             viterbi_scores.at(i)[HMM_START] = s_to_s + this->emit_log_proba(sr.samples[i], HMM_START);
@@ -411,35 +461,52 @@ public:
             // START: S can only come from S
             viterbi_bptrs.at(i)[HMM_START] = HMM_START;
             // LEADER: L->L or S->L
-            if (s_to_l < l_to_l) {
+            if (s_to_l < l_to_l)
+            {
                 viterbi_bptrs.at(i)[HMM_LEADER] = HMM_LEADER;
-            } else {
+            }
+            else
+            {
                 viterbi_bptrs.at(i)[HMM_LEADER] = HMM_START;
             }
             // ADAPTER:
-            if (l_to_a < a_to_a) {
+            if (l_to_a < a_to_a)
+            {
                 viterbi_bptrs.at(i)[HMM_ADAPTER] = HMM_ADAPTER;
-            } else {
+            }
+            else
+            {
                 viterbi_bptrs.at(i)[HMM_ADAPTER] = HMM_LEADER;
             }
             // POLYA:
-            if ((a_to_p < p_to_p) && (c_to_p < p_to_p)) {
+            if ((a_to_p < p_to_p) && (c_to_p < p_to_p))
+            {
                 viterbi_bptrs.at(i)[HMM_POLYA] = HMM_POLYA;
-            } else if ((p_to_p < a_to_p) && (c_to_p < a_to_p)) {
+            }
+            else if ((p_to_p < a_to_p) && (c_to_p < a_to_p))
+            {
                 viterbi_bptrs.at(i)[HMM_POLYA] = HMM_ADAPTER;
-            } else {
+            }
+            else
+            {
                 viterbi_bptrs.at(i)[HMM_POLYA] = HMM_CLIFF;
             }
             // CLIFF:
-            if (p_to_c < c_to_c) {
+            if (p_to_c < c_to_c)
+            {
                 viterbi_bptrs.at(i)[HMM_CLIFF] = HMM_CLIFF;
-            } else {
+            }
+            else
+            {
                 viterbi_bptrs.at(i)[HMM_CLIFF] = HMM_POLYA;
             }
             // TRANSCRIPT:
-            if (p_to_t < t_to_t) {
+            if (p_to_t < t_to_t)
+            {
                 viterbi_bptrs.at(i)[HMM_TRANSCRIPT] = HMM_TRANSCRIPT;
-            } else {
+            }
+            else
+            {
                 viterbi_bptrs.at(i)[HMM_TRANSCRIPT] = HMM_POLYA;
             }
         }
@@ -449,57 +516,65 @@ public:
         // clamp final state to 'T' ~ transcript:
         std::vector<HMMState> regions(num_samples, HMM_START);
         std::vector<float> scores(num_samples, 0);
-        regions[num_samples-1] = HMM_TRANSCRIPT;
-        scores[num_samples-1] = viterbi_scores.at(num_samples-1)[HMM_TRANSCRIPT];
+        regions[num_samples - 1] = HMM_TRANSCRIPT;
+        scores[num_samples - 1] = viterbi_scores.at(num_samples - 1)[HMM_TRANSCRIPT];
         // loop backwards and keep appending best states:
-        for (size_t j=(num_samples-2); j > 0; --j) {
-            regions[j] = viterbi_bptrs.at(j)[regions.at(j+1)];
-            scores[j] = viterbi_scores.at(j)[regions.at(j+1)];
+        for (size_t j = (num_samples - 2); j > 0; --j)
+        {
+            regions[j] = viterbi_bptrs.at(j)[regions.at(j + 1)];
+            scores[j] = viterbi_scores.at(j)[regions.at(j + 1)];
         }
 
         // format as ViterbiOutputs struct and return:
-        ViterbiOutputs output_vectors = { scores, regions };
+        ViterbiOutputs output_vectors = {scores, regions};
         return output_vectors;
     }
 
     // ----- parse a squiggle's viterbi labels into a regional segmentation:
-    Segmentation segment_squiggle(const SquiggleRead& sr) const
+    Segmentation segment_squiggle(const SquiggleRead &sr) const
     {
         ViterbiOutputs viterbi_outs = this->viterbi(sr);
 
         // compute final sample indices of each region:
-        std::vector<HMMState>& region_labels = viterbi_outs.labels;
+        std::vector<HMMState> &region_labels = viterbi_outs.labels;
 
         // initial values for indices should preserve expected order:
-        Segmentation ixs = { 0, 1, 2, 3, 0 };
+        Segmentation ixs = {0, 1, 2, 3, 0};
 
         // loop through sequence and collect values:
-        for (std::vector<uint8_t>::size_type i = 0; i < region_labels.size(); ++i) {
+        for (std::vector<uint8_t>::size_type i = 0; i < region_labels.size(); ++i)
+        {
             // call end of START:
-            if (region_labels[i] == HMM_START && region_labels[i+1] == HMM_LEADER) {
+            if (region_labels[i] == HMM_START && region_labels[i + 1] == HMM_LEADER)
+            {
                 ixs.start = static_cast<size_t>(i);
             }
             // call end of leader:
-            if (region_labels[i] == HMM_LEADER && region_labels[i+1] == HMM_ADAPTER) {
+            if (region_labels[i] == HMM_LEADER && region_labels[i + 1] == HMM_ADAPTER)
+            {
                 ixs.leader = static_cast<size_t>(i);
             }
             // call end of adapter:
-            if (region_labels[i] == HMM_ADAPTER && region_labels[i+1] == HMM_POLYA) {
+            if (region_labels[i] == HMM_ADAPTER && region_labels[i + 1] == HMM_POLYA)
+            {
                 ixs.adapter = static_cast<size_t>(i);
             }
             // call end of polya:
-            if (region_labels[i] == HMM_POLYA && region_labels[i+1] == HMM_TRANSCRIPT) {
+            if (region_labels[i] == HMM_POLYA && region_labels[i + 1] == HMM_TRANSCRIPT)
+            {
                 ixs.polya = static_cast<size_t>(i);
             }
             // increment cliff counter:
-            if (region_labels[i] == HMM_CLIFF) {
+            if (region_labels[i] == HMM_CLIFF)
+            {
                 ixs.cliffs++;
             }
         }
 
         // set sensible (easy to QC-filter) default values if not all four detected;
         // S-end is always detected (min value == 0)
-        if (ixs.leader == 1 || ixs.adapter == 2 || ixs.polya == 3) {
+        if (ixs.leader == 1 || ixs.adapter == 2 || ixs.polya == 3)
+        {
             ixs.leader = region_labels.size() - 3;
             ixs.adapter = region_labels.size() - 2;
             ixs.polya = region_labels.size() - 1;
@@ -519,10 +594,10 @@ public:
 // Compute a read-rate based on event-alignment, collapsed by consecutive 5mer identity
 // (N.B.: deprecated; using non-eventaligned durations seems to work just as well
 // while being faster to run.)
-double estimate_eventalign_duration_profile(SquiggleRead& sr,
-                                            const faidx_t* fai,
-                                            const bam_hdr_t* hdr,
-                                            const bam1_t* record,
+double estimate_eventalign_duration_profile(SquiggleRead &sr,
+                                            const faidx_t *fai,
+                                            const bam_hdr_t *hdr,
+                                            const bam1_t *record,
                                             const size_t read_idx)
 {
     EventAlignmentParameters params;
@@ -539,13 +614,17 @@ double estimate_eventalign_duration_profile(SquiggleRead& sr,
     std::vector<double> durations_per_kmer;
 
     size_t prev_ref_position = -1;
-    for(const auto& ea : alignment_output) {
+    for (const auto &ea : alignment_output)
+    {
         float event_duration = sr.get_duration(ea.event_idx, ea.strand_idx);
         size_t ref_position = ea.ref_position;
-        if(ref_position == prev_ref_position) {
+        if (ref_position == prev_ref_position)
+        {
             assert(!durations_per_kmer.empty());
             durations_per_kmer.back() += event_duration;
-        } else {
+        }
+        else
+        {
             durations_per_kmer.push_back(event_duration);
             prev_ref_position = ref_position;
         }
@@ -561,10 +640,10 @@ double estimate_eventalign_duration_profile(SquiggleRead& sr,
 }
 
 // compute a read-rate based on kmer-to-event mapping, collapsed by consecutive 5mer identity:
-double estimate_unaligned_duration_profile(const SquiggleRead& sr,
-                                           const faidx_t* fai,
-                                           const bam_hdr_t* hdr,
-                                           const bam1_t* record,
+double estimate_unaligned_duration_profile(const SquiggleRead &sr,
+                                           const faidx_t *fai,
+                                           const bam_hdr_t *hdr,
+                                           const bam1_t *record,
                                            const size_t read_idx,
                                            const size_t strand_idx)
 {
@@ -574,15 +653,18 @@ double estimate_unaligned_duration_profile(const SquiggleRead& sr,
 
     // collect durations, collapsing by k-mer:
     std::vector<double> durations_per_kmer(num_kmers);
-    for (size_t i = 0; i < sr.base_to_event_map.size(); ++i) {
+    for (size_t i = 0; i < sr.base_to_event_map.size(); ++i)
+    {
         size_t start_idx = sr.base_to_event_map[i].indices[strand_idx].start;
         size_t end_idx = sr.base_to_event_map[i].indices[strand_idx].stop;
         // no events for this k-mer
-        if (start_idx == -1) {
+        if (start_idx == -1)
+        {
             continue;
         }
         assert(start_idx <= end_idx);
-        for (size_t j = start_idx; j <= end_idx; ++j) {
+        for (size_t j = start_idx; j <= end_idx; ++j)
+        {
             durations_per_kmer[i] += sr.get_duration(j, strand_idx);
         }
     }
@@ -599,10 +681,10 @@ double estimate_unaligned_duration_profile(const SquiggleRead& sr,
 }
 
 // fetch the raw event durations for a given read:
-std::vector<double> fetch_event_durations(const SquiggleRead& sr,
-                                          const faidx_t* fai,
-                                          const bam_hdr_t* hdr,
-                                          const bam1_t* record,
+std::vector<double> fetch_event_durations(const SquiggleRead &sr,
+                                          const faidx_t *fai,
+                                          const bam_hdr_t *hdr,
+                                          const bam1_t *record,
                                           const size_t read_idx,
                                           const size_t strand_idx)
 {
@@ -612,15 +694,18 @@ std::vector<double> fetch_event_durations(const SquiggleRead& sr,
 
     // collect durations, collapsing by k-mer:
     std::vector<double> durations_per_kmer(num_kmers);
-    for (size_t i = 0; i < sr.base_to_event_map.size(); ++i) {
+    for (size_t i = 0; i < sr.base_to_event_map.size(); ++i)
+    {
         size_t start_idx = sr.base_to_event_map[i].indices[strand_idx].start;
         size_t end_idx = sr.base_to_event_map[i].indices[strand_idx].stop;
         // no events for this k-mer
-        if (start_idx == -1) {
+        if (start_idx == -1)
+        {
             continue;
         }
         assert(start_idx <= end_idx);
-        for (size_t j = start_idx; j <= end_idx; ++j) {
+        for (size_t j = start_idx; j <= end_idx; ++j)
+        {
             durations_per_kmer[i] += sr.get_duration(j, strand_idx);
         }
     }
@@ -635,7 +720,7 @@ std::vector<double> fetch_event_durations(const SquiggleRead& sr,
 // * estimate_polya_length : return an estimate of the read rate for this read.
 // ================================================================================
 // Compute an estimate of the number of nucleotides in the poly-A tail
-double estimate_polya_length(const SquiggleRead& sr, const Segmentation& region_indices, const double read_rate)
+double estimate_polya_length(const SquiggleRead &sr, const Segmentation &region_indices, const double read_rate)
 {
     // start and end times (sample indices) of the poly(A) tail, in original 3'->5' time-direction:
     // (n.b.: everything in 5'->3' order due to inversion in SquiggleRead constructor, but our
@@ -669,13 +754,16 @@ double estimate_polya_length(const SquiggleRead& sr, const Segmentation& region_
 // * post_estimation_qc: sanity check for estimates.
 // ================================================================================
 // QC before segmentation; check if event-alignment passes.
-std::string pre_segmentation_qc(uint32_t suffix_clip, uint32_t prefix_clip, double transcript_length, const SquiggleRead& sr)
+std::string pre_segmentation_qc(uint32_t suffix_clip, uint32_t prefix_clip, double transcript_length, const SquiggleRead &sr)
 {
     std::string qc_tag;
-    if (suffix_clip > 200) {
+    if (suffix_clip > 200)
+    {
         // fail if this read has a long skip at end:
         qc_tag = "SUFFCLIP";
-    } else {
+    }
+    else
+    {
         // pass if none of the above fail:
         qc_tag = "PASS";
     }
@@ -685,17 +773,20 @@ std::string pre_segmentation_qc(uint32_t suffix_clip, uint32_t prefix_clip, doub
 // QC pass after constructing a segmentation; returns a QC flag represented as a string,
 // either "PASS" or "NOREGION".
 // These tests indicate that something went wrong in the segmentation algorithm.
-std::string post_segmentation_qc(const Segmentation& region_indices, const SquiggleRead& sr)
+std::string post_segmentation_qc(const Segmentation &region_indices, const SquiggleRead &sr)
 {
     // fetch sizes of ADAPTER and POLYA regions:
-    double num_adapter_samples = (region_indices.adapter+1) - region_indices.leader;
-    double num_polya_samples = region_indices.polya - (region_indices.adapter+1);
+    double num_adapter_samples = (region_indices.adapter + 1) - region_indices.leader;
+    double num_polya_samples = region_indices.polya - (region_indices.adapter + 1);
 
     // check for NOREGION:
     std::string qc_tag;
-    if (num_adapter_samples < 200.0 || num_polya_samples < 200.0) {
+    if (num_adapter_samples < 200.0 || num_polya_samples < 200.0)
+    {
         qc_tag = "NOREGION";
-    } else {
+    }
+    else
+    {
         qc_tag = "PASS";
     }
     return qc_tag;
@@ -704,7 +795,7 @@ std::string post_segmentation_qc(const Segmentation& region_indices, const Squig
 // QC pass after performing estimation; returns a QC flag represented as a string.
 // Currently returns either "PASS" or "ADAPTER".
 // These tests indicate that something went wrong in the estimation algorithm.
-std::string post_estimation_qc(const Segmentation& region_indices, const SquiggleRead& sr, double read_rate, double polya_length)
+std::string post_estimation_qc(const Segmentation &region_indices, const SquiggleRead &sr, double read_rate, double polya_length)
 {
     // `adapter_qc_tol` is the (empirically-discovered) upper-tolerance for number of estimated adapter nucleotides:
     double adapter_qc_tol = 300.0f;
@@ -713,12 +804,61 @@ std::string post_estimation_qc(const Segmentation& region_indices, const Squiggl
     double adapter_length = adapter_duration * read_rate;
 
     std::string qc_tag;
-    if (adapter_length > adapter_qc_tol) {
+    if (adapter_length > adapter_qc_tol)
+    {
         qc_tag = "ADAPTER";
-    } else {
+    }
+    else
+    {
         qc_tag = "PASS";
     }
     return qc_tag;
+}
+
+// Calculate PAS position based on the position of aligned 3' end and the position of PAS.
+int estimate_pas_position(const Segmentation &region_indices,
+                          const SquiggleRead &sr,
+                          const bam1_t *record,
+                          size_t strand_idx)
+{
+    bool is_reverse = record->core.flag & BAM_FREVERSE;
+    uint32_t *cigar = bam_get_cigar(record);
+    int genomic_pos_3p;
+    int sclip_length;
+    if (is_reverse)
+    {
+        genomic_pos_3p = record->core.pos;
+        sclip_length = bam_cigar_op(cigar[0]) & BAM_CSOFT_CLIP ? bam_cigar_oplen(cigar[0]) : 0;
+    }
+    else
+    {
+        genomic_pos_3p = bam_endpos(record);
+        sclip_length = bam_cigar_op(cigar[record->core.n_cigar - 1]) & BAM_CSOFT_CLIP ? bam_cigar_oplen(cigar[record->core.n_cigar - 1]) : 0;
+    }
+
+    int genomic_pos_difference = 0;
+    int num_bases_searched = 0;
+    for (int i = sr.base_to_event_map.size() - 1; i >= 0; i--)
+    {
+        size_t start_idx = sr.base_to_event_map[i].indices[strand_idx].start;
+        size_t end_idx = sr.base_to_event_map[i].indices[strand_idx].stop;
+        num_bases_searched += 1;
+
+        if (start_idx < region_indices.polya && end_idx < region_indices.polya)
+        {
+            continue;
+        }
+        if (num_bases_searched > sclip_length)
+        {
+            break;
+        }
+
+        genomic_pos_difference += 1;
+    }
+
+    int genomic_pos_pas = record->core.flag & BAM_FREVERSE ? genomic_pos_3p - genomic_pos_difference : genomic_pos_3p + genomic_pos_difference;
+
+    return genomic_pos_pas;
 }
 
 // ================================================================================
@@ -730,17 +870,18 @@ std::string post_estimation_qc(const Segmentation& region_indices, const Squiggl
 //     for easy multi-threading across reads
 // ================================================================================
 // Write Poly(A) region segmentation and tail length estimation data to TSV
-void estimate_polya_for_single_read(const ReadDB& read_db,
-                                    const faidx_t* fai,
-                                    FILE* out_fp,
-                                    const bam_hdr_t* hdr,
-                                    const bam1_t* record,
+void estimate_polya_for_single_read(const ReadDB &read_db,
+                                    const faidx_t *fai,
+                                    FILE *out_fp,
+                                    const bam_hdr_t *hdr,
+                                    const bam1_t *record,
                                     size_t read_idx,
                                     int region_start,
                                     int region_end)
 {
     //----- check if primary or secondary alignment by inspecting FLAG; skip read if secondary:
-    if (record->core.flag & BAM_FSECONDARY) {
+    if (record->core.flag & BAM_FSECONDARY)
+    {
         return;
     }
 
@@ -759,25 +900,29 @@ void estimate_polya_for_single_read(const ReadDB& read_db,
 
     //----- construct SquiggleRead; if there are load issues, print -1's and skip compute:
     SquiggleRead sr(read_name, read_db, SRF_LOAD_RAW_SAMPLES);
-    if (sr.fast5_path == "" || sr.events[0].empty()) {
-        #pragma omp critical
-	{
-            fprintf(out_fp, "%s\t%s\t%d\t-1.0\t-1.0\t-1.0\t-1.0\t-1.00\t-1.00\tREAD_FAILED_LOAD\n",
-                read_name.c_str(), ref_name.c_str(), record->core.pos);
-            if (opt::verbose == 1) {
+    if (sr.fast5_path == "" || sr.events[0].empty())
+    {
+#pragma omp critical
+        {
+            fprintf(out_fp, "%s\t%s\t%d\t-1\t-1.0\t-1.0\t-1.0\t-1.0\t-1.00\t-1.00\tREAD_FAILED_LOAD\n",
+                    read_name.c_str(), ref_name.c_str(), record->core.pos);
+            if (opt::verbose == 1)
+            {
                 fprintf(out_fp,
-                    "polya-samples\t%s\t%s\t-1\t-1.0\t-1.0\t-1.0\t-1.0\t-1.0\t-1.0\t-1.0\t-1.0\tREAD_FAILED_LOAD\n",
-                    read_name.substr(0,6).c_str(), ref_name.c_str());
+                        "polya-samples\t%s\t%s\t-1\t-1\t-1.0\t-1.0\t-1.0\t-1.0\t-1.0\t-1.0\t-1.0\t-1.0\tREAD_FAILED_LOAD\n",
+                        read_name.substr(0, 6).c_str(), ref_name.c_str());
             }
-            if (opt::verbose == 2) {
-                fprintf(out_fp, "polya-durations\t%s\t-1\t-1.0\tREAD_FAILED_LOAD\n", read_name.substr(0,6).c_str());
+            if (opt::verbose == 2)
+            {
+                fprintf(out_fp, "polya-durations\t%s\t-1\t-1\t-1.0\tREAD_FAILED_LOAD\n", read_name.substr(0, 6).c_str());
             }
         }
         return;
     }
 
     //----- print clipping data if `verbose > 2` set:
-    if (opt::verbose > 2) {
+    if (opt::verbose > 2)
+    {
         fprintf(stderr, "[polya] read: %s length: %zu prefix clip: %u suffix clip %u\n",
                 read_name.c_str(), sr.read_sequence.length(), prefix_clip, suffix_clip);
     }
@@ -796,73 +941,96 @@ void estimate_polya_for_single_read(const ReadDB& read_db,
     //----- compute duration profile for the read:
     double read_rate = estimate_unaligned_duration_profile(sr, fai, hdr, record, read_idx, strand_idx);
 
+    //----- estimate location of polyadenylation site genomic coordinate
+    int pas = estimate_pas_position(region_indices, sr, record, strand_idx);
+
     //----- estimate number of nucleotides in poly-A tail & post-estimation QC:
     double polya_length = estimate_polya_length(sr, region_indices, read_rate);
     std::string post_estimation_qc_flag = post_estimation_qc(region_indices, sr, read_rate, polya_length);
 
     //----- Resolve QC flag based on priority:
     std::string qc_tag;
-    if (post_segmentation_qc_flag.compare("PASS") != 0) {
+    if (post_segmentation_qc_flag.compare("PASS") != 0)
+    {
         qc_tag = post_segmentation_qc_flag;
-    } else if (post_estimation_qc_flag.compare("PASS") != 0) {
+    }
+    else if (post_estimation_qc_flag.compare("PASS") != 0)
+    {
         qc_tag = post_estimation_qc_flag;
-    } else if (pre_segmentation_qc_flag.compare("PASS") != 0) {
+    }
+    else if (pre_segmentation_qc_flag.compare("PASS") != 0)
+    {
         qc_tag = pre_segmentation_qc_flag;
-    } else {
+    }
+    else
+    {
         qc_tag = "PASS";
     }
 
     //----- print annotations to TSV:
-    double leader_sample_start = region_indices.start+1;
-    double adapter_sample_start = region_indices.leader+1;
-    double polya_sample_start = region_indices.adapter+1;
+    double leader_sample_start = region_indices.start + 1;
+    double adapter_sample_start = region_indices.leader + 1;
+    double polya_sample_start = region_indices.adapter + 1;
     double polya_sample_end = region_indices.polya;
-    double transcr_sample_start = region_indices.polya+1;
-    #pragma omp critical
+    double transcr_sample_start = region_indices.polya + 1;
+#pragma omp critical
     {
-        fprintf(out_fp, "%s\t%s\t%d\t%.1lf\t%.1lf\t%.1lf\t%.1lf\t%.2lf\t%.2lf\t%s\n",
-                read_name.c_str(), ref_name.c_str(), record->core.pos,
+        fprintf(out_fp, "%s\t%s\t%d\t%d\t%.1lf\t%.1lf\t%.1lf\t%.1lf\t%.2lf\t%.2lf\t%s\n",
+                read_name.c_str(), ref_name.c_str(), record->core.pos, pas,
                 leader_sample_start, adapter_sample_start, polya_sample_start,
                 transcr_sample_start, read_rate, polya_length, qc_tag.c_str());
         // if `verbose == 1`, print the samples (picoAmps) of the read,
         // up to the first 1000 samples of transcript region:
-        if (opt::verbose == 1) {
-            for (size_t i = 0; i < std::min(static_cast<size_t>(polya_sample_end)+1000, sr.samples.size()); ++i) {
+        if (opt::verbose == 1)
+        {
+            for (size_t i = 0; i < std::min(static_cast<size_t>(polya_sample_end) + 1000, sr.samples.size()); ++i)
+            {
                 std::string tag;
-                if (i < leader_sample_start) {
+                if (i < leader_sample_start)
+                {
                     tag = "START";
-                } else if (i < adapter_sample_start) {
+                }
+                else if (i < adapter_sample_start)
+                {
                     tag = "LEADER";
-                } else if (i < polya_sample_start) {
-                    tag =  "ADAPTER";
-                } else if (i < polya_sample_end) {
+                }
+                else if (i < polya_sample_start)
+                {
+                    tag = "ADAPTER";
+                }
+                else if (i < polya_sample_end)
+                {
                     tag = "POLYA";
-                } else {
+                }
+                else
+                {
                     tag = "TRANSCRIPT";
                 }
                 float s = sr.samples[i];
                 float scaled_s = (s - sr.scalings[0].shift) / sr.scalings[0].scale;
                 std::vector<float> s_probas = hmm.log_probas(s);
                 fprintf(out_fp, "polya-samples\t%s\t%s\t%zu\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%s\n",
-                        read_name.substr(0,6).c_str(), ref_name.c_str(), i, s, scaled_s,
+                        read_name.substr(0, 6).c_str(), ref_name.c_str(), i, s, scaled_s,
                         s_probas.at(0), s_probas.at(1), s_probas.at(2), s_probas.at(3), s_probas.at(4), s_probas.at(5),
                         tag.c_str());
             }
         }
         // if `verbose == 2`, print the raw event durations of the read:
-        if (opt::verbose == 2) {
+        if (opt::verbose == 2)
+        {
             std::vector<double> raw_durations = fetch_event_durations(sr, fai, hdr, record, read_idx, strand_idx);
-            for (size_t i = 0; i < raw_durations.size(); ++i) {
+            for (size_t i = 0; i < raw_durations.size(); ++i)
+            {
                 double dura = raw_durations[i];
                 fprintf(out_fp, "polya-durations\t%s\t%zu\t%f\t%s\n",
-                    read_name.substr(0,6).c_str(), i, dura, qc_tag.c_str());
+                        read_name.substr(0, 6).c_str(), i, dura, qc_tag.c_str());
             }
         }
     }
 }
 
 // Wrap poly-A estimation code for parallelism
-int polya_main(int argc, char** argv)
+int polya_main(int argc, char **argv)
 {
     parse_polya_options(argc, argv);
     omp_set_num_threads(opt::num_threads);
@@ -874,7 +1042,7 @@ int polya_main(int argc, char** argv)
     faidx_t *fai = fai_load(opt::genome_file.c_str());
 
     // print header line:
-    fprintf(stdout, "readname\tcontig\tposition\tleader_start\tadapter_start\tpolya_start\ttranscript_start\tread_rate\tpolya_length\tqc_tag\n");
+    fprintf(stdout, "readname\tcontig\tposition\tpas_position\tleader_start\tadapter_start\tpolya_start\ttranscript_start\tread_rate\tpolya_length\tqc_tag\n");
 
     // the BamProcessor framework calls the input function with the
     // bam record, read index, etc passed as parameters
